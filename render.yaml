@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: bazaarapi
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 60 vulnshop_api:app
+    envVars:
+      - key: PORT
+        value: 10000
+    healthCheckPath: /api/v1/health
