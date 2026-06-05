@@ -179,9 +179,15 @@ def add_headers(response):
 def index():
     if request.method == "TRACE":
         return Response(request.data, mimetype="message/http")
+    # Serve the real Indian shopping website
+    return send_from_directory(os.path.dirname(__file__), "index.html")
+
+@app.route("/api/info")
+def api_info():
+    """JSON info endpoint for API clients."""
     return jsonify({
         "platform": "BazaarAPI",
-        "tagline":  "India Ka Apna Online Bazaar 🛒",
+        "tagline":  "India Ka Apna Online Bazaar",
         "version":  "2.1.0",
         "status":   "live",
         "docs":     "/docs",
