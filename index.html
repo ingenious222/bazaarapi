@@ -194,9 +194,11 @@ footer{background:#172337;color:#fff;margin-top:32px}
   .footer-top{grid-template-columns:repeat(2,1fr)}
   .recents{grid-template-columns:repeat(3,1fr)}
 }
+
 </style>
 </head>
 <body>
+
 
 <!-- HEADER -->
 <header class="header">
@@ -564,12 +566,18 @@ function renderProducts(products, gridId) {
     return;
   }
   grid.innerHTML = products.map(p => {
-    const emoji = EMOJIS[p.category] || '📦';
     const disc = Math.round((1 - p.price/p.mrp)*100);
+    const imgSrc = p.image || `https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80`;
+    const stars = '★'.repeat(Math.floor(p.rating||4)) + '☆'.repeat(5-Math.floor(p.rating||4));
     return `
     <div class="product-card" onclick="addToCart(${JSON.stringify(p).replace(/"/g,'&quot;')})">
-      <div class="product-img">
-        <div style="font-size:56px">${emoji}</div>
+      <div class="product-img" style="background:#f5f5f5;font-size:0">
+        <img src="${imgSrc}" alt="${p.name}"
+          style="width:100%;height:100%;object-fit:cover;transition:transform .3s"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+          onmouseover="this.style.transform='scale(1.07)'"
+          onmouseout="this.style.transform='scale(1)'">
+        <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:48px">📦</div>
         ${disc > 0 ? `<div class="product-badge">${disc}% OFF</div>` : ''}
         <div class="product-wishlist" onclick="event.stopPropagation();wishlist(this)">
           <i class="far fa-heart"></i>
@@ -577,7 +585,8 @@ function renderProducts(products, gridId) {
       </div>
       <div class="product-info">
         <div class="brand">${p.brand || p.seller || ''}</div>
-        <h3>${p.name}</h3>
+        <h3 title="${p.name}">${p.name}</h3>
+        ${p.description ? `<div style="font-size:11px;color:#878787;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.description}</div>` : ''}
         <div class="price-row">
           <span class="price">₹${p.price.toLocaleString('en-IN')}</span>
           ${p.mrp > p.price ? `<span class="mrp">₹${p.mrp.toLocaleString('en-IN')}</span>` : ''}
@@ -585,7 +594,8 @@ function renderProducts(products, gridId) {
         </div>
         <div class="rating">
           <div class="rating-badge"><i class="fas fa-star" style="font-size:9px"></i> ${p.rating || '4.0'}</div>
-          <span class="rating-count">(${Math.floor(Math.random()*5000+200)} ratings)</span>
+          <span class="rating-count">(${Math.floor(Math.random()*5000+500)})</span>
+          <span style="font-size:10px;color:var(--green);margin-left:4px">${p.stock > 50 ? '✓ In Stock' : p.stock > 0 ? `Only ${p.stock} left!` : '✗ Out of Stock'}</span>
         </div>
         <button class="add-cart" onclick="event.stopPropagation();addToCartBtn(${JSON.stringify(p).replace(/"/g,'&quot;')})">
           <i class="fas fa-cart-plus"></i> Add to Cart
